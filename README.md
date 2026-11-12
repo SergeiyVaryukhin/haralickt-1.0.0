@@ -144,22 +144,30 @@ Configuration dataclass with validation.
 > **Note on feature #10 (Diff Entropy):** This feature is implemented to match `mahotas` behavior exactly. It does **not** follow the original Haralick (1973) paper definition. If you need the paper-correct formula, you will need to adjust the computation in `feature_math.py`.
 
 ## Performance
+### Точность
+Сравнение с mahotas (256x256, 32 градации, 27 комбинаций параметров):
+- Максимальное расхождение: **2.02e-4** (float32 rounding, признак *Diff Variance*)
+- Среднее расхождение: **~1.1e-6**
+- Худший случай: `window=8, stride=2, distance=4` и `window=8, stride=4, distance=4`
+### Скорость
 
-Benchmark on 256x256 image, 32 gray levels (CPU, Python 3.12):
+Изображение 256x256, 32 градации, Python 3.12:
 
-| Window | Stride | Distance | mahotas | haralickt | Speedup |
-|--------|--------|----------|---------|-----------|---------|
-| 8 | 2 | 1 | 3.07s | 0.49s | **6.3x** |
-| 8 | 4 | 2 | 2.22s | 0.12s | **18.6x** |
-| 8 | 8 | 2 | 2.09s | 0.025s | **83.5x** |
-| 16 | 4 | 2 | 2.06s | 0.12s | **16.8x** |
-| 32 | 2 | 1 | 2.76s | 0.71s | **3.9x** |
-| 32 | 8 | 4 | 1.90s | 0.031s | **60.9x** |
+| Сценарий | mahotas (ср.) | haralickt (ср.) | Ускорение |
+|----------|:---:|:---:|:---:|
+| PyTorch **CPU** vs mahotas **CPU (1 поток)** | 3.23s | 0.19s | **16.7x** |
+| PyTorch **GPU (CUDA)** vs mahotas **CPU (10 потоков)** | 2.68s | 0.13s | **20.5x** |
 
-Maximum numerical difference vs mahotas: **2.0e-4** (float32 rounding).
-**Worst case:** max discrepancy of **2.02e-4** observed at `window=8, stride=2, distance=4` (and `window=8, stride=4, distance=4`) — both in the *Diff Variance* feature. All other combinations stay below **7.2e-5**.
+Диапазон ускорения по комбинациям:
 
-> **Note on CPU speedup:** The CPU numbers above compare single-threaded mahotas against multi-threaded PyTorch (OpenMP/MKL). When mahotas is also run with 10–12 threads, the performance gap is largely neutralized. The real advantage of `haralickt` is **GPU acceleration**: on CUDA, `haralickt` is **10–15x faster** than multi-threaded mahotas.
+| Сценарий | Мин. | Макс. |
+|----------|:---:|:---:|
+| CPU vs CPU (1 thr) | 9.1x | 67.7x |
+| GPU vs CPU (10 thr) | 6.9x | 295x |
+
+> **Примечание:** Ускорение на CPU достигается за счёт многопоточности PyTorch (OpenMP/MKL). При 10–12 потоках в mahotas разница нивелируется. Реальное преимущество `haralickt` — **GPU-ускорение**: на CUDA `haralickt` в **~20x быстрее** многопоточного mahotas (10 потоков).
+
+Полный бенчмарк: `python examples/compare_with_mahotas.py`
 
 ## Project Structure
 
