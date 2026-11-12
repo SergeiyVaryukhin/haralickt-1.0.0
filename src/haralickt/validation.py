@@ -60,3 +60,8 @@ def validate_config(config: HaralickConfig) -> None:
             f"tile_size ({config.tile_size}) should be >= window_size ({config.window_size}) "
             f"for efficient processing"
         )
+    if config.stride > 1 and config.tile_size % config.stride != 0:
+        raise ValueError(
+            f"tile_size ({config.tile_size}) must be a multiple of stride ({config.stride}) "
+            f"for correct window alignment"
+        )

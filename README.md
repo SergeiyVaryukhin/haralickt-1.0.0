@@ -7,7 +7,7 @@
 ## Features
 
 - **13 standard Haralick features**: ASM, Contrast, Correlation, Variance, IDM, Sum Average, Sum Variance, Sum Entropy, Entropy, Diff Variance, Diff Entropy, IMC1, IMC2
-- **Drop-in replacement for mahotas**: same API, same output format `(H, W, 13)`
+- **Drop-in replacement for mahotas**: same API, same output format `(4, 13)`
 - **PyTorch backend**: works on CPU and GPU (CUDA)
 - **Sliding window API**: compute features at every pixel position with configurable window size and stride
 - **Tiling support**: process large images in tiles to control memory usage
@@ -29,9 +29,9 @@ pip install -e .
 ```
 
 **Requirements:**
-- Python >= 3.10
+- Python >= 3.9
 - PyTorch >= 2.0
-- NumPy >= 1.24
+- NumPy >= 1.23
 
 ## Quick Start
 
@@ -46,7 +46,7 @@ image = np.random.randint(0, 256, (256, 256), dtype=np.uint8)
 
 # Same API as mahotas.features.haralick
 features = haralick(image, ignore_zeros=True, distance=1)
-print(features.shape)  # (256, 256, 13)
+print(features.shape)  # (4, 13)
 ```
 
 ### Sliding window API (original)
@@ -98,7 +98,7 @@ Drop-in replacement for `mahotas.features.haralick`.
 | `ignore_zeros` | `bool` | `True` | Exclude zero-valued pixels from GLCM |
 | `distance` | `int` | `1` | Pixel distance for co-occurrence (1, 2, or 4) |
 
-**Returns:** `np.ndarray` of shape `(H, W, 13)` with 13 Haralick features.
+**Returns:** `np.ndarray` of shape `(4, 13)` — one row per direction (0°, 45°, 90°, 135°), 13 features per direction.
 
 ### `haralickt.haralick(image, num_levels, window_size, stride, ...)`
 
@@ -110,7 +110,7 @@ Sliding-window Haralick feature extraction.
 | `num_levels` | `int` | `32` | Number of gray levels |
 | `window_size` | `int` | `32` | Window size for local GLCM |
 | `stride` | `int` | `8` | Step between windows |
-| `tile_size` | `int` | `128` | Tile size for memory-efficient processing |
+| `tile_size` | `int` | `1024` | Tile size for memory-efficient processing (must be a multiple of `stride`) |
 | `device` | `str` | `"cpu"` | Compute device (`"cpu"`, `"cuda"`, `"cuda:0"`) |
 
 **Returns:** `Tensor` of shape `(H_out, W_out, 13)`.
@@ -144,30 +144,32 @@ Configuration dataclass with validation.
 > **Note on feature #10 (Diff Entropy):** This feature is implemented to match `mahotas` behavior exactly. It does **not** follow the original Haralick (1973) paper definition. If you need the paper-correct formula, you will need to adjust the computation in `feature_math.py`.
 
 ## Performance
-### Точность
-Сравнение с mahotas (256x256, 32 градации, 27 комбинаций параметров):
-- Максимальное расхождение: **2.02e-4** (float32 rounding, признак *Diff Variance*)
-- Среднее расхождение: **~1.1e-6**
-- Худший случай: `window=8, stride=2, distance=4` и `window=8, stride=4, distance=4`
-### Скорость
+### Accuracy
 
-Изображение 256x256, 32 градации, Python 3.12:
+Comparison with mahotas (256x256 image, 32 gray levels, 27 parameter combinations):
+- Maximum discrepancy: **2.02e-4** (float32 rounding, *Diff Variance* feature)
+- Mean discrepancy: **~1.1e-6**
+- Worst case: `window=8, stride=2, distance=4` and `window=8, stride=4, distance=4`
 
-| Сценарий | mahotas (ср.) | haralickt (ср.) | Ускорение |
+### Speed
+
+256x256 image, 32 gray levels, Python 3.12:
+
+| Scenario | mahotas (avg) | haralickt (avg) | Speedup |
 |----------|:---:|:---:|:---:|
-| PyTorch **CPU** vs mahotas **CPU (1 поток)** | 3.23s | 0.19s | **16.7x** |
-| PyTorch **GPU (CUDA)** vs mahotas **CPU (10 потоков)** | 2.68s | 0.13s | **20.5x** |
+| PyTorch **CPU** vs mahotas **CPU (1 thread)** | 3.23s | 0.19s | **16.7x** |
+| PyTorch **GPU (CUDA)** vs mahotas **CPU (10 threads)** | 2.68s | 0.13s | **20.5x** |
 
-Диапазон ускорения по комбинациям:
+Speedup range across combinations:
 
-| Сценарий | Мин. | Макс. |
+| Scenario | Min | Max |
 |----------|:---:|:---:|
 | CPU vs CPU (1 thr) | 9.1x | 67.7x |
 | GPU vs CPU (10 thr) | 6.9x | 295x |
 
-> **Примечание:** Ускорение на CPU достигается за счёт многопоточности PyTorch (OpenMP/MKL). При 10–12 потоках в mahotas разница нивелируется. Реальное преимущество `haralickt` — **GPU-ускорение**: на CUDA `haralickt` в **~20x быстрее** многопоточного mahotas (10 потоков).
+> **Note:** CPU speedup is achieved through PyTorch multi-threading (OpenMP/MKL). When mahotas is also run with 10–12 threads, the gap is largely neutralized. The real advantage of `haralickt` is **GPU acceleration**: on CUDA, `haralickt` is **~20x faster** than multi-threaded mahotas (10 threads).
 
-Полный бенчмарк: `python examples/compare_with_mahotas.py`
+Full benchmark: `python examples/compare_with_mahotas.py`
 
 ## Project Structure
 
