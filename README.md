@@ -2,7 +2,7 @@
 
 > Fast Haralick texture features (GLCM) for PyTorch
 
-**haralickt** is a high-performance library for computing Haralick texture features (Gray-Level Co-occurrence Matrix, GLCM) using PyTorch. It provides a drop-in replacement for `mahotas.features.haralick` with **3x to 83x speedup** on CPU, and GPU acceleration when available.
+**haralickt** is a high-performance library for computing Haralick texture features (Gray-Level Co-occurrence Matrix, GLCM) using PyTorch. It provides a drop-in replacement for `mahotas.features.haralick` with **9x to 68x speedup** on CPU and up to **295x** on GPU.
 
 ## Features
 
@@ -167,7 +167,25 @@ Speedup range across combinations:
 | CPU vs CPU (1 thr) | 9.1x | 67.7x |
 | GPU vs CPU (10 thr) | 6.9x | 295x |
 
+![CPU Speedup](examples/charts/cpu_speedup.png)
+
+![GPU Speedup](examples/charts/gpu_speedup.png)
+
+![Combined](examples/charts/combined.png)
+
 > **Note:** CPU speedup is achieved through PyTorch multi-threading (OpenMP/MKL). When mahotas is also run with 10–12 threads, the gap is largely neutralized. The real advantage of `haralickt` is **GPU acceleration**: on CUDA, `haralickt` is **~20x faster** than multi-threaded mahotas (10 threads).
+
+### Comparison with other libraries
+
+| Feature | haralickt | mahotas | scikit-image |
+|---------|:---------:|:-------:|:------------:|
+| GPU (CUDA) | ✅ | ❌ | ❌ |
+| Haralick features | 13 | 13 | 10 |
+| Missing features | — | — | 3 |
+| Sliding window API | ✅ | ❌ | ❌ |
+| Tiling (large images) | ✅ | ❌ | ❌ |
+| Batch processing | ✅ | ❌ | ❌ |
+| Backend | PyTorch | C (OpenMP) | NumPy |
 
 Full benchmark: `python examples/compare_with_mahotas.py`
 
