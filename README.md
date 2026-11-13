@@ -167,11 +167,30 @@ Speedup range across combinations:
 | CPU vs CPU (1 thr) | 9.1x | 67.7x |
 | GPU vs CPU (10 thr) | 6.9x | 295x |
 
-![CPU Speedup](examples/charts/cpu_speedup.png)
+![CPU Speedup by Parameters](examples/charts/cpu_speedup.png)
 
-![GPU Speedup](examples/charts/gpu_speedup.png)
+![GPU Speedup by Parameters](examples/charts/gpu_speedup.png)
 
-![Combined](examples/charts/combined.png)
+![Combined by Parameters](examples/charts/combined.png)
+
+### Speed by Image Size
+
+Parameters: `window=16, stride=4, distance=1, levels=32`
+
+| Size | mahotas (CPU, 1 thr) | haralickt (CPU) | Speedup | mahotas (CPU, 10 thr) | haralickt (GPU) | Speedup |
+|------|:---:|:---:|:---:|:---:|:---:|:---:|
+| 256×256 | 2.34s | 0.11s | **22.3×** | 7.13s | 0.02s | **464×** |
+| 512×512 | 5.44s | 0.43s | **12.6×** | 3.22s | 0.05s | **61×** |
+| 1024×1024 | 19.98s | 1.88s | **10.6×** | 6.54s | 0.23s | **29×** |
+| 2048×2048 | 70.13s | 6.68s | **10.5×** | 15.25s | 0.72s | **21×** |
+
+> **Note:** GPU speedup for 256×256 is inflated by mahotas multiprocessing overhead (Pool spawn cost dominates for small images). For larger images, GPU advantage stabilizes at **~20–30×**.
+
+![CPU Speedup by Image Size](examples/charts/cpu_speedup_size.png)
+
+![GPU Speedup by Image Size](examples/charts/gpu_speedup_size.png)
+
+![Combined by Image Size](examples/charts/combined_size.png)
 
 > **Note:** CPU speedup is achieved through PyTorch multi-threading (OpenMP/MKL). When mahotas is also run with 10–12 threads, the gap is largely neutralized. The real advantage of `haralickt` is **GPU acceleration**: on CUDA, `haralickt` is **~20x faster** than multi-threaded mahotas (10 threads).
 
